@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Activity extends Model
 {
+    /**
+     * @use HasFactory<\Database\Factories\ActivityFactory>
+     */
     use HasFactory;
 
     protected $fillable = [
@@ -31,16 +34,25 @@ class Activity extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * @return HasMany<Income, $this>
+     */
     public function incomes(): HasMany
     {
         return $this->hasMany(Income::class);
     }
 
+    /**
+     * @return HasMany<Expense, $this>
+     */
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);

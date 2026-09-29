@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Income extends Model
 {
+    /**
+     * @use HasFactory<\Database\Factories\IncomeFactory>
+     */
     use HasFactory;
 
     protected $fillable = [
@@ -32,11 +35,17 @@ class Income extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * @return BelongsTo<Activity, $this>
+     */
     public function activity(): BelongsTo
     {
         return $this->belongsTo(Activity::class);

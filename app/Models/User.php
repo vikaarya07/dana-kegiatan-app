@@ -49,16 +49,25 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         ];
     }
 
+    /**
+     * @return HasMany<Activity, $this>
+     */
     public function activities(): HasMany
     {
         return $this->hasMany(Activity::class, 'created_by');
     }
 
+    /**
+     * @return HasMany<Income, $this>
+     */
     public function incomes(): HasMany
     {
         return $this->hasMany(Income::class, 'created_by');
     }
 
+    /**
+     * @return HasMany<Expense, $this>
+     */
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class, 'created_by');
@@ -72,7 +81,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         $initials = Str::initials($this->name, true);
 
         return Str::length($initials) > 1
-            ? Str::substr($initials, 0, 1).Str::substr($initials, -1)
+            ? Str::substr($initials, 0, 1) . Str::substr($initials, -1)
             : $initials;
     }
 }
