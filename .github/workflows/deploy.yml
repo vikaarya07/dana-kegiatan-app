@@ -81,7 +81,7 @@ jobs:
                   host: ${{ secrets.SSH_HOST }}
                   username: ${{ secrets.SSH_USERNAME }}
                   key: ${{ secrets.SSH_PRIVATE_KEY }}
-                  port: 22
+                  port: ${{ secrets.SSH_PORT }}
                   source: "."
                   target: "/home/u426348873/domains/vikaarya07.my.id/public_html/dana-kegiatan"
                   overwrite: true
@@ -95,7 +95,7 @@ jobs:
                   host: ${{ secrets.SSH_HOST }}
                   username: ${{ secrets.SSH_USERNAME }}
                   key: ${{ secrets.SSH_PRIVATE_KEY }}
-                  port: 22
+                  port: ${{ secrets.SSH_PORT }}
                   script_stop: true
                   script: |
                       cd /home/u426348873/domains/vikaarya07.my.id/public_html/dana-kegiatan
