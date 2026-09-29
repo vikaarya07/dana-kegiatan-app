@@ -14,13 +14,13 @@ jobs:
 
         steps:
             # ==========================================
-            # 1. CHECKOUT
+            # CHECKOUT
             # ==========================================
             - name: Checkout
               uses: actions/checkout@v4
 
             # ==========================================
-            # 2. SETUP PHP
+            # PHP
             # ==========================================
             - name: Setup PHP
               uses: shivammathur/setup-php@v2
@@ -30,8 +30,24 @@ jobs:
                   coverage: none
                   tools: composer:v2
 
+            - name: Verify PHP
+              run: |
+                  php -v
+                  composer --version
+
             # ==========================================
-            # 3. SETUP NODE
+            # COMPOSER
+            # ==========================================
+            - name: Install Composer dependencies
+              run: |
+                  composer install \
+                    --no-dev \
+                    --prefer-dist \
+                    --optimize-autoloader \
+                    --no-interaction
+
+            # ==========================================
+            # NODE
             # ==========================================
             - name: Setup Node
               uses: actions/setup-node@v4
@@ -39,26 +55,17 @@ jobs:
                   node-version: "22"
                   cache: npm
 
-            # ==========================================
-            # 4. INSTALL COMPOSER
-            # ==========================================
-            - name: Install Composer dependencies
-              run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
-
-            # ==========================================
-            # 5. INSTALL NPM
-            # ==========================================
             - name: Install NPM dependencies
               run: npm ci
 
             # ==========================================
-            # 6. BUILD FRONTEND
+            # BUILD
             # ==========================================
             - name: Build frontend
               run: npm run build
 
             # ==========================================
-            # 7. PREPARE DEPLOYMENT
+            # PREPARE
             # ==========================================
             - name: Prepare deployment
               run: |
@@ -66,7 +73,7 @@ jobs:
                   rm -rf node_modules
 
             # ==========================================
-            # 8. DEPLOY VIA SFTP
+            # DEPLOY
             # ==========================================
             - name: Deploy to Hostinger
               uses: appleboy/scp-action@v1
@@ -80,7 +87,7 @@ jobs:
                   overwrite: true
 
             # ==========================================
-            # 9. RUN LARAVEL COMMANDS
+            # LARAVEL PRODUCTION COMMANDS
             # ==========================================
             - name: Run Laravel deployment commands
               uses: appleboy/ssh-action@v1
@@ -93,26 +100,46 @@ jobs:
                   script: |
                       cd /home/u426348873/domains/vikaarya07.my.id/public_html/dana-kegiatan
 
-                      echo "== PHP VERSION =="
+                      echo "========================================"
+                      echo "PHP VERSION"
+                      echo "========================================"
                       /opt/alt/php85/usr/bin/php -v
 
-                      echo "== MIGRATE DATABASE =="
+                      echo "========================================"
+                      echo "DATABASE MIGRATION"
+                      echo "========================================"
                       /opt/alt/php85/usr/bin/php artisan migrate --force
 
-                      echo "== STORAGE LINK =="
+                      echo "========================================"
+                      echo "STORAGE LINK"
+                      echo "========================================"
                       /opt/alt/php85/usr/bin/php artisan storage:link || true
 
-                      echo "== CLEAR CACHE =="
+                      echo "========================================"
+                      echo "CLEAR CACHE"
+                      echo "========================================"
                       /opt/alt/php85/usr/bin/php artisan optimize:clear
 
-                      echo "== CACHE CONFIG =="
+                      echo "========================================"
+                      echo "CACHE CONFIG"
+                      echo "========================================"
                       /opt/alt/php85/usr/bin/php artisan config:cache
 
-                      echo "== CACHE ROUTES =="
+                      echo "========================================"
+                      echo "CACHE ROUTES"
+                      echo "========================================"
                       /opt/alt/php85/usr/bin/php artisan route:cache
 
-                      echo "== CACHE VIEWS =="
+                      echo "========================================"
+                      echo "CACHE VIEWS"
+                      echo "========================================"
                       /opt/alt/php85/usr/bin/php artisan view:cache
 
-                      echo "== DEPLOYMENT COMPLETE =="
+                      echo "========================================"
+                      echo "APPLICATION INFO"
+                      echo "========================================"
                       /opt/alt/php85/usr/bin/php artisan about
+
+                      echo "========================================"
+                      echo "DEPLOYMENT COMPLETE"
+                      echo "========================================"
