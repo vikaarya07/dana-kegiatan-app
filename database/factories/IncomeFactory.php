@@ -25,7 +25,7 @@ class IncomeFactory extends Factory
             'activity_id' => fake()->optional()->randomElement(
                 Activity::query()->pluck('id')->all()
             ),
-            'transaction_number' => 'DK-IN-' . now()->format('Ym') . '-' . fake()->unique()->numberBetween(1, 9999),
+            'transaction_number' => 'DK-IN-'.now()->format('Ym').'-'.fake()->unique()->numberBetween(1, 9999),
             'date' => fake()->dateTimeBetween('-2 months', 'now'),
             'type' => fake()->randomElement(IncomeType::cases()),
             'description' => fake()->sentence(4),

@@ -24,7 +24,7 @@ class ExpenseFactory extends Factory
             'activity_id' => fake()->optional()->randomElement(
                 Activity::query()->pluck('id')->all()
             ),
-            'transaction_number' => 'DK-EX-' . now()->format('Ym') . '-' . fake()->unique()->numberBetween(1, 9999),
+            'transaction_number' => 'DK-EX-'.now()->format('Ym').'-'.fake()->unique()->numberBetween(1, 9999),
             'date' => fake()->dateTimeBetween('-2 months', 'now'),
             'description' => fake()->sentence(4),
             'amount' => fake()->randomFloat(2, 50_000, 3_000_000),
