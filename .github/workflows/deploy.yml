@@ -1,0 +1,118 @@
+name: Deploy Dana Kegiatan
+
+on:
+    push:
+        branches:
+            - main
+
+    workflow_dispatch:
+
+jobs:
+    deploy:
+        name: Build and Deploy Laravel
+        runs-on: ubuntu-latest
+
+        steps:
+            # ==========================================
+            # 1. CHECKOUT
+            # ==========================================
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            # ==========================================
+            # 2. SETUP PHP
+            # ==========================================
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: "8.5"
+                  extensions: mbstring, bcmath, ctype, curl, dom, fileinfo, openssl, pdo, pdo_mysql, tokenizer, xml
+                  coverage: none
+                  tools: composer:v2
+
+            # ==========================================
+            # 3. SETUP NODE
+            # ==========================================
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+                  cache: npm
+
+            # ==========================================
+            # 4. INSTALL COMPOSER
+            # ==========================================
+            - name: Install Composer dependencies
+              run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+
+            # ==========================================
+            # 5. INSTALL NPM
+            # ==========================================
+            - name: Install NPM dependencies
+              run: npm ci
+
+            # ==========================================
+            # 6. BUILD FRONTEND
+            # ==========================================
+            - name: Build frontend
+              run: npm run build
+
+            # ==========================================
+            # 7. PREPARE DEPLOYMENT
+            # ==========================================
+            - name: Prepare deployment
+              run: |
+                  rm -rf .git
+                  rm -rf node_modules
+
+            # ==========================================
+            # 8. DEPLOY VIA SFTP
+            # ==========================================
+            - name: Deploy to Hostinger
+              uses: appleboy/scp-action@v1
+              with:
+                  host: ${{ secrets.SSH_HOST }}
+                  username: ${{ secrets.SSH_USERNAME }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  port: 22
+                  source: "."
+                  target: "/home/u426348873/domains/vikaarya07.my.id/public_html/dana-kegiatan"
+                  overwrite: true
+
+            # ==========================================
+            # 9. RUN LARAVEL COMMANDS
+            # ==========================================
+            - name: Run Laravel deployment commands
+              uses: appleboy/ssh-action@v1
+              with:
+                  host: ${{ secrets.SSH_HOST }}
+                  username: ${{ secrets.SSH_USERNAME }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  port: 22
+                  script_stop: true
+                  script: |
+                      cd /home/u426348873/domains/vikaarya07.my.id/public_html/dana-kegiatan
+
+                      echo "== PHP VERSION =="
+                      /opt/alt/php85/usr/bin/php -v
+
+                      echo "== MIGRATE DATABASE =="
+                      /opt/alt/php85/usr/bin/php artisan migrate --force
+
+                      echo "== STORAGE LINK =="
+                      /opt/alt/php85/usr/bin/php artisan storage:link || true
+
+                      echo "== CLEAR CACHE =="
+                      /opt/alt/php85/usr/bin/php artisan optimize:clear
+
+                      echo "== CACHE CONFIG =="
+                      /opt/alt/php85/usr/bin/php artisan config:cache
+
+                      echo "== CACHE ROUTES =="
+                      /opt/alt/php85/usr/bin/php artisan route:cache
+
+                      echo "== CACHE VIEWS =="
+                      /opt/alt/php85/usr/bin/php artisan view:cache
+
+                      echo "== DEPLOYMENT COMPLETE =="
+                      /opt/alt/php85/usr/bin/php artisan about

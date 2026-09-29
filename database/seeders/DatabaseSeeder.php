@@ -24,6 +24,12 @@ class DatabaseSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
+        User::factory()->create([
+            'name' => 'Tamu',
+            'email' => 'guest@vikaarya07.my.id',
+            'email_verified_at' => now(),
+        ]);
+
         Activity::factory()
             ->count(5)
             ->for($user, 'creator')
