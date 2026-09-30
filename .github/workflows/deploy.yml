@@ -13,15 +13,15 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            # ==========================================
+            # ========================================
             # CHECKOUT
-            # ==========================================
+            # ========================================
             - name: Checkout
               uses: actions/checkout@v4
 
-            # ==========================================
+            # ========================================
             # PHP
-            # ==========================================
+            # ========================================
             - name: Setup PHP
               uses: shivammathur/setup-php@v2
               with:
@@ -35,9 +35,9 @@ jobs:
                   php -v
                   composer --version
 
-            # ==========================================
+            # ========================================
             # COMPOSER
-            # ==========================================
+            # ========================================
             - name: Install Composer dependencies
               run: |
                   composer install \
@@ -46,9 +46,9 @@ jobs:
                     --optimize-autoloader \
                     --no-interaction
 
-            # ==========================================
+            # ========================================
             # NODE
-            # ==========================================
+            # ========================================
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
@@ -58,88 +58,133 @@ jobs:
             - name: Install NPM dependencies
               run: npm ci
 
-            # ==========================================
-            # BUILD
-            # ==========================================
+            # ========================================
+            # BUILD VITE
+            # ========================================
             - name: Build frontend
               run: npm run build
 
-            # ==========================================
-            # PREPARE
-            # ==========================================
-            - name: Prepare deployment
+            # ========================================
+            # SETUP SSH
+            # ========================================
+            - name: Setup SSH
               run: |
-                  rm -rf .git
-                  rm -rf node_modules
+                  mkdir -p ~/.ssh
+                  chmod 700 ~/.ssh
 
-            # ==========================================
-            # DEPLOY
-            # ==========================================
-            - name: Deploy to Hostinger
-              uses: appleboy/scp-action@v1
-              with:
-                  host: ${{ secrets.SSH_HOST }}
-                  username: ${{ secrets.SSH_USERNAME }}
-                  key: ${{ secrets.SSH_PRIVATE_KEY }}
-                  port: ${{ secrets.SSH_PORT }}
-                  source: "."
-                  target: "/home/u426348873/domains/vikaarya07.my.id/public_html/dana-kegiatan"
-                  overwrite: true
+                  echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+                  chmod 600 ~/.ssh/id_ed25519
 
-            # ==========================================
-            # LARAVEL PRODUCTION COMMANDS
-            # ==========================================
-            - name: Run Laravel deployment commands
-              uses: appleboy/ssh-action@v1
-              with:
-                  host: ${{ secrets.SSH_HOST }}
-                  username: ${{ secrets.SSH_USERNAME }}
-                  key: ${{ secrets.SSH_PRIVATE_KEY }}
-                  port: ${{ secrets.SSH_PORT }}
-                  script_stop: true
-                  script: |
-                      cd /home/u426348873/domains/vikaarya07.my.id/public_html/dana-kegiatan
+                  ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+                  chmod 644 ~/.ssh/known_hosts
 
-                      echo "========================================"
-                      echo "PHP VERSION"
-                      echo "========================================"
-                      /opt/alt/php85/usr/bin/php -v
+            # ========================================
+            # TEST SSH
+            # ========================================
+            - name: Test SSH connection
+              run: |
+                  ssh \
+                    -i ~/.ssh/id_ed25519 \
+                    -p "${{ secrets.SSH_PORT }}" \
+                    -o StrictHostKeyChecking=yes \
+                    -o BatchMode=yes \
+                    -o ConnectTimeout=30 \
+                    "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}" \
+                    "echo SSH CONNECTION SUCCESS"
 
-                      echo "========================================"
-                      echo "DATABASE MIGRATION"
-                      echo "========================================"
-                      /opt/alt/php85/usr/bin/php artisan migrate --force
+            # ========================================
+            # DEPLOY FILES
+            # ========================================
+            - name: Deploy files
+              run: |
+                  rsync -az \
+                    --delete \
+                    --exclude=".git/" \
+                    --exclude=".github/" \
+                    --exclude=".env" \
+                    --exclude="node_modules/" \
+                    --exclude="storage/" \
+                    -e "ssh -i ~/.ssh/id_ed25519 -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=yes -o BatchMode=yes" \
+                    ./ \
+                    "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/u426348873/domains/vikaarya07.my.id/public_html/dana-kegiatan/"
 
-                      echo "========================================"
-                      echo "STORAGE LINK"
-                      echo "========================================"
-                      /opt/alt/php85/usr/bin/php artisan storage:link || true
+            # ========================================
+            # LARAVEL DEPLOYMENT
+            # ========================================
+            - name: Run Laravel deployment
+              run: |
+                  ssh \
+                    -i ~/.ssh/id_ed25519 \
+                    -p "${{ secrets.SSH_PORT }}" \
+                    -o StrictHostKeyChecking=yes \
+                    -o BatchMode=yes \
+                    -o ConnectTimeout=30 \
+                    "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}" << 'EOF'
 
-                      echo "========================================"
-                      echo "CLEAR CACHE"
-                      echo "========================================"
-                      /opt/alt/php85/usr/bin/php artisan optimize:clear
+                  set -e
 
-                      echo "========================================"
-                      echo "CACHE CONFIG"
-                      echo "========================================"
-                      /opt/alt/php85/usr/bin/php artisan config:cache
+                  cd /home/u426348873/domains/vikaarya07.my.id/public_html/dana-kegiatan
 
-                      echo "========================================"
-                      echo "CACHE ROUTES"
-                      echo "========================================"
-                      /opt/alt/php85/usr/bin/php artisan route:cache
+                  echo "========================================"
+                  echo "PHP VERSION"
+                  echo "========================================"
 
-                      echo "========================================"
-                      echo "CACHE VIEWS"
-                      echo "========================================"
-                      /opt/alt/php85/usr/bin/php artisan view:cache
+                  /opt/alt/php85/usr/bin/php -v
 
-                      echo "========================================"
-                      echo "APPLICATION INFO"
-                      echo "========================================"
-                      /opt/alt/php85/usr/bin/php artisan about
+                  echo "========================================"
+                  echo "MIGRATION"
+                  echo "========================================"
 
-                      echo "========================================"
-                      echo "DEPLOYMENT COMPLETE"
-                      echo "========================================"
+                  /opt/alt/php85/usr/bin/php artisan migrate --force
+
+                  echo "========================================"
+                  echo "STORAGE LINK"
+                  echo "========================================"
+
+                  /opt/alt/php85/usr/bin/php artisan storage:link || true
+
+                  echo "========================================"
+                  echo "CLEAR CACHE"
+                  echo "========================================"
+
+                  /opt/alt/php85/usr/bin/php artisan optimize:clear
+
+                  echo "========================================"
+                  echo "CACHE CONFIG"
+                  echo "========================================"
+
+                  /opt/alt/php85/usr/bin/php artisan config:cache
+
+                  echo "========================================"
+                  echo "CACHE ROUTES"
+                  echo "========================================"
+
+                  /opt/alt/php85/usr/bin/php artisan route:cache
+
+                  echo "========================================"
+                  echo "CACHE VIEWS"
+                  echo "========================================"
+
+                  /opt/alt/php85/usr/bin/php artisan view:cache
+
+                  echo "========================================"
+                  echo "PERMISSIONS"
+                  echo "========================================"
+
+                  find storage -type d -exec chmod 775 {} \;
+                  find storage -type f -exec chmod 664 {} \;
+
+                  find bootstrap/cache -type d -exec chmod 775 {} \;
+                  find bootstrap/cache -type f -exec chmod 664 {} \;
+
+                  echo "========================================"
+                  echo "APPLICATION INFO"
+                  echo "========================================"
+
+                  /opt/alt/php85/usr/bin/php artisan about
+
+                  echo "========================================"
+                  echo "DEPLOYMENT COMPLETE"
+                  echo "========================================"
+
+                  EOF
