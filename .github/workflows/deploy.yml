@@ -68,24 +68,41 @@ jobs:
             # SETUP SSH
             # ========================================
             - name: Setup SSH
+              shell: bash
               run: |
+                  set -e
+
                   mkdir -p ~/.ssh
                   chmod 700 ~/.ssh
 
-                  echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+                  cat > ~/.ssh/id_ed25519 <<'KEY'
+                  ${{ secrets.SSH_PRIVATE_KEY }}
+                  KEY
+
                   chmod 600 ~/.ssh/id_ed25519
 
-                  ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+                  echo "Checking private key..."
+
+                  ssh-keygen -y -f ~/.ssh/id_ed25519 > ~/.ssh/id_ed25519.pub
+
+                  echo "Private key is valid."
+
+                  ssh-keyscan -p "${{ secrets.SSH_PORT }}" \
+                    "${{ secrets.SSH_HOST }}" \
+                    >> ~/.ssh/known_hosts
+
                   chmod 644 ~/.ssh/known_hosts
 
             # ========================================
             # TEST SSH
             # ========================================
             - name: Test SSH connection
+              shell: bash
               run: |
                   ssh \
                     -i ~/.ssh/id_ed25519 \
                     -p "${{ secrets.SSH_PORT }}" \
+                    -o IdentitiesOnly=yes \
                     -o StrictHostKeyChecking=yes \
                     -o BatchMode=yes \
                     -o ConnectTimeout=30 \
